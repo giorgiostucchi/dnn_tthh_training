@@ -214,7 +214,7 @@ x_test = testDF.loc[:, input_features]
 print("Training variables:", input_features)
 nFeatures = len(input_features)
 
-model_path = "~/dnn_tthh_training/"
+model_path = "/afs/cern.ch/user/g/gstucchi/dnn_tthh_training/results/"
 os.makedirs(model_path, exist_ok=True)
 # Saving training variables to json
 var_dict = {}
@@ -259,10 +259,11 @@ with open(hist_json_file, mode='w') as f:
     hist_df.to_json(f)
 
 # plotting train/val loss
+print("plotting train/val loss")
 fig = plt.figure(figsize=(15,12))
 plt.style.use(hep.style.ROOT)
 hep.atlas.text(text='Internal', loc=1, fontsize=20)
-hep.atlas.text(text=r'$\sqrt{s}$=13 TeV, 5b Data'+'\n'+'6b Resonant TRSM signal', loc=2, fontsize=20)
+hep.atlas.text(text=r'$\sqrt{s}$=14 Tev, ttHH fullHad signal', loc=2, fontsize=20)
 plt.plot(history.history['loss'])
 plt.plot(history.history['val_loss'])
 plt.legend(['train', 'validation'], loc='upper right')
@@ -286,14 +287,15 @@ pred_train_bkg = model.predict(train_bkg_scaled)
 pred_val_sig = model.predict(val_sig_scaled)
 pred_val_bkg = model.predict(val_bkg_scaled)
 
+print("plotting nn prediction")
 fig = plt.figure(figsize=(15,12))
 plt.style.use(hep.style.ROOT)
 hep.atlas.text(text='Internal', loc=1, fontsize=20)
-hep.atlas.text(text=r'$\sqrt{s}$=13 TeV, 5b Data'+'\n'+'6b Resonant TRSM signal', loc=2, fontsize=20)
-plt.hist(pred_train_sig, bins=50, histtype="step", density=True, linestyle='--', label="6b resonant TRSM (training)", color="steelblue")
-plt.hist(pred_val_sig, bins=50, histtype="step", density=True, label="6b resonant TRSM (validation)", color="steelblue")
-plt.hist(pred_train_bkg, bins=50, histtype="step", density=True, linestyle='--', label="5b data (training)", color="darkorange")
-plt.hist(pred_val_bkg, bins=50, histtype="step", density=True, label="5b data (validation)", color="darkorange")
+hep.atlas.text(text=r'$\sqrt{s}$=14 Tev, ttHH fullHad signal', loc=2, fontsize=20)
+plt.hist(pred_train_sig, bins=50, histtype="step", density=True, linestyle='--', label="signal (training)", color="steelblue")
+plt.hist(pred_val_sig, bins=50, histtype="step", density=True, label="signal (validation)", color="steelblue")
+plt.hist(pred_train_bkg, bins=50, histtype="step", density=True, linestyle='--', label="background (training)", color="darkorange")
+plt.hist(pred_val_bkg, bins=50, histtype="step", density=True, label="background (validation)", color="darkorange")
 plt.legend()
 ymin, ymax = plt.ylim()
 plt.ylim(ymin, ymax*1.2)
@@ -303,6 +305,8 @@ plot_name = model_path +"/nn_pred.pdf"
 fig.savefig(plot_name, transparent=True)
 
 ################## DONE: shapley #####################
+print("plotting shapley beeswarm")
+fig = plt.figure(figsize=(15,12))
 X_shap = shuffle(x_train_scaled, random_state=0)
 explainer = shap.Explainer(model.predict, masker=X_shap)
 explanation = explainer(X_shap[:200, :])
@@ -312,12 +316,9 @@ shap_values = shap.Explanation(
     data=explanation.data, 
     feature_names=input_features
 )
-import matplotlib.pyplot as plt
-plt.figure()
-shap.plots.beeswarm(shap_values,
-                    max_display=50)
+shap.plots.beeswarm(shap_values,                    max_display=50)
 plt.tight_layout()
-plt.savefig(model_path + "/shapley_beeswarm.pdf")
+fig.savefig(model_path + "/shapley_beeswarm.pdf")
 ######################################################
 
 
@@ -338,10 +339,11 @@ pr_auc_train = auc(y_train, y_pred_train)
 pr_auc_val = auc(y_valid, y_pred_valid)
 
 # plot roc curve
+print("plotting roc curve")
 fig = plt.figure(figsize=(15,12))
 plt.style.use(hep.style.ROOT)
 hep.atlas.text(text='Internal', loc=1, fontsize=20)
-hep.atlas.text(text='6b resonant TRSM signal MC, 5b Data', loc=2, fontsize=20)
+hep.atlas.text(text='ttHH fullHad signal', loc=2, fontsize=20)
 plt.plot(fpr_train, tpr_train, label='Training ROC curve (AUC = {:.3f})'.format(roc_auc_train))
 plt.plot(fpr_val, tpr_val, label='Validation ROC curve (AUC = {:.3f})'.format(roc_auc_val))
 plt.legend()
@@ -354,10 +356,11 @@ plot_name = model_path +"/ROC.pdf"
 fig.savefig(plot_name, transparent=True)
 
 # plot precision recall curve
+print("plotting precision recall curve")
 fig = plt.figure(figsize=(15,12))
 plt.style.use(hep.style.ROOT)
 hep.atlas.text(text='Internal', loc=1, fontsize=20)
-hep.atlas.text(text='6b resonant TRSM signal MC, 5b Data', loc=2, fontsize=20)
+hep.atlas.text(text='ttHH fullHad signal', loc=2, fontsize=20)
 plt.plot(rec_train, prec_train, label='Training precision recall curve (AUC = {:.3f})'.format(pr_auc_train))
 plt.plot(rec_val, prec_val, label='Validation precision recall curve (AUC = {:.3f})'.format(pr_auc_val))
 plt.legend()
