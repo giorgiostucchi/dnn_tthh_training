@@ -1,3 +1,5 @@
+print("I am starting something here...")
+
 import argparse
 #from ROOT import *
 import pandas as pd
@@ -29,7 +31,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.pipeline import Pipeline
-from sklearn_export import Export
+# from sklearn_export import Export
 import json
 import shap
 from sklearn.utils import shuffle
@@ -43,12 +45,6 @@ def GetParser():
   """Argument parser for reading Ntuples script."""
   parser = argparse.ArgumentParser(
       description="Reading Ntuples command line options."
-  )
-
-  parser.add_argument(
-      "--which",
-      type=str,
-      help="specify training even or odd model",
   )
 
   parser.add_argument(
@@ -93,7 +89,9 @@ EPOCH=80
 nodes = [args.node]*args.layer
 dropout_rate = args.dropout
 
-input_features = ["mH1","mH2","bjetH1_dR","bjetH2_dR","rmsmH","rmsEta","mHcosTheta","sphere3dbtrans","aplan4dv2b","rmsdRBB"]
+#input_features = ["met_pt" ] #change these
+#input_features = ["nrecojet_antikt4","nrecojet_antikt4_btag85","chi_hh","chi_hz","chi_zz","DeltaR_12", "DeltaR_34", "DeltaR_56", "DeltaPhi_12", "DeltaPhi_34","DeltaPhi_56", "DeltaEta_12", "DeltaEta_34","DeltaEta_56", "DeltaR_1234", "DeltaR_1256", "DeltaR_3456", "DeltaPhi_1234", "DeltaPhi_1256", "DeltaPhi_3456", "DeltaEta_1234", "DeltaEta_1256", "DeltaEta_3456", "DeltaEta_max", "DeltaEta_min", "DeltaEta_mean", "DeltaR_max", "DeltaR_min", "DeltaR_mean", "mH1_hh", "mH2_hh", "mH_hz", "mZ_hz", "mZ1_zz", "mZ2_zz", "m_jj56", "pT_1", 'pT_2', "pT_3", "pT_4", "pT_5", "pT_6", "eta_1", "eta_2", "eta_3", "eta_4", "eta_5", "eta_6", "pT_12", "pT_34", "pT_56", "sumHT_bjets", "sumHT_totalJets", "met_pt", "met_phi"]
+input_features = ["nrecojet_antikt4","nrecojet_antikt4_btag85","chi_hh","chi_hz","chi_zz","DeltaR_12", "DeltaR_34", "DeltaPhi_12", "DeltaPhi_34", "DeltaEta_12", "DeltaEta_34", "DeltaR_1234", "DeltaPhi_1234", "DeltaEta_1234", "DeltaEta_max", "DeltaEta_min", "DeltaEta_mean", "DeltaR_max", "DeltaR_min", "DeltaR_mean", "mH1_hh", "mH2_hh", "mH_hz", "mZ_hz", "mZ1_zz", "mZ2_zz","pT_1", 'pT_2', "pT_3", "pT_4", "eta_1", "eta_2", "eta_3", "eta_4", "pT_12", "pT_34", "sumHT_bjets", "sumHT_totalJets", "met_pt", "met_phi"]
 # Better function for saving keras predictions
 def Save_pred(pred_train_sig,pred_train_bkg,pred_test_sig,pred_test_bkg, path):
   numpy.savetxt(str(path) + "/TrainSigPred.txt", pred_train_sig, delimiter=',')
@@ -123,17 +121,20 @@ def create_model(input_dim):
   
   return model
 ################################ LOADING INPUT DATASETS ################################
-even_bkg_file = uproot.open("/data/atlas/atlasdata3/maggiechen/HHH6b_pairing/pairing+nn/20230501_pTreco_off/SM_HHH/training_inclusive/5b_data_even.root:tree")
-odd_bkg_file = uproot.open("/data/atlas/atlasdata3/maggiechen/HHH6b_pairing/pairing+nn/20230501_pTreco_off/SM_HHH/training_inclusive/5b_data_odd.root:tree")
-df_bkg_even = even_bkg_file.arrays(library="pd")
-df_bkg_odd = odd_bkg_file.arrays(library="pd")
-#input_features = even_bkg_file.keys()
+bkg_file = uproot.open("/eos/user/g/gstucchi/NTRUPLES/FullHadCuts/background.root:MiniTree_NOSYS")
+print("reading in background files", id)
+#mainfolder = "/eos/atlas/atlascerngroupdisk/phys-hdbs/diHiggs/ttHH/forStudents/NTRUPLES/FullHadCuts/"
+#bkg_file = uproot.open(mainfolder + "mc20_13TeV.410470.PhPy8EG_A14_ttbar_hdamp258p75_nonallhad.deriv.NTRUPLE_PHYSLITE.e6337_s3681_r13144_p5631.33123165._000001.pool.root.1-test.FullHadCuts/data-Analysis_TTHH4B/mc20_13TeV.410470.PhPy8EG_A14_ttbar_hdamp258p75_nonallhad.deriv.DAOD_PHYSLITE.e6337_s3681_r13144_p5631.root:MiniTree_NOSYS")
+df_bkg = bkg_file.arrays(library="pd")
+# retrieve a single entry in df_bkg
+
+#input_features = bkg_file.keys()
 #input_to_remove = ["eventWeight","eventNumber","mX","rweight","rweightflat","rweightphi","ntruebjet","pthat","nrecob","nb77","sumPC","mcChannelNumber",
 #                   "nHnotruthjetmatch","correctpair","hascorrectpair","nbquark"]
 
 #input_features = [item for item in input_features if item not in input_to_remove]
 
-columns = even_bkg_file.keys()
+columns = bkg_file.keys()
 trainSigDF = pd.DataFrame(columns = columns)
 trainBkgDF = pd.DataFrame(columns = columns)
 testSigDF = pd.DataFrame(columns = columns)
@@ -144,28 +145,16 @@ train_sig_sample_wgts = []
 
 num_train_sig = 0
 num_test_sig = 0
+sig_file = uproot.open("/eos/user/g/gstucchi/NTRUPLES/FullHadCuts/signal.root:MiniTree_NOSYS")
 print("reading in signal files", id)
-sig_even_file = uproot.open("/data/atlas/atlasdata3/maggiechen/HHH6b_pairing/pairing+nn/20230501_pTreco_off/SM_HHH/training_inclusive/6b_SM_HHH_521162_even.root:tree")
-sig_odd_file = uproot.open("/data/atlas/atlasdata3/maggiechen/HHH6b_pairing/pairing+nn/20230501_pTreco_off/SM_HHH/training_inclusive/6b_SM_HHH_521162_odd.root:tree")
-df_sig_even = sig_even_file.arrays(library="pd")
-df_sig_odd = sig_odd_file.arrays(library="pd")
-
-if args.which=="even":
-  trainSigDF = trainSigDF.append(df_sig_even, ignore_index=True)
-  testSigDF = testSigDF.append(df_sig_odd, ignore_index=True)
-  train_sig_wgts = df_sig_even.loc[:, "eventWeight"].values
-  test_sig_wgts = df_sig_odd.loc[:, "eventWeight"].values
-  len_train_seg = len(df_sig_even)
-  len_test_seg = len(df_sig_odd)
-elif args.which == "odd":
-  trainSigDF = trainSigDF.append(df_sig_odd, ignore_index=True)
-  testSigDF = testSigDF.append(df_sig_odd, ignore_index=True)
-  train_sig_wgts = df_sig_odd.loc[:, "eventWeight"].values
-  test_sig_wgts = df_sig_even.loc[:, "eventWeight"].values
-  len_train_seg = len(df_sig_odd)
-  len_test_seg = len(df_sig_even)
-else:
-  print("choose to train either even or odd model!!")
+#sig_file = uproot.open(mainfolder+"mc20_13TeV.523074.MGPy8EG_A14NNPDF23LO_ttHH_fullhad.deriv.NTRUPLE_PHYSLITE.e8531_a899_r13144_p5689.33615665._000001.pool.root.1-test.FullHadCuts/data-Analysis_TTHH4B/mc20_13TeV.523074.MGPy8EG_A14NNPDF23LO_ttHH_fullhad.deriv.DAOD_PHYSLITE.e8531_a899_r13144_p5689.root:MiniTree_NOSYS")
+df_sig = sig_file.arrays(library="pd") #this is already too big
+trainSigDF = trainSigDF.append(df_sig, ignore_index=True)
+testSigDF = testSigDF.append(df_sig, ignore_index=True)
+train_sig_wgts = df_sig.loc[:, "mcEventWeight"].values
+test_sig_wgts = df_sig.loc[:, "mcEventWeight"].values
+len_train_seg = len(df_sig)
+len_test_seg = len(df_sig)
 
 num_train_sig += len_train_seg
 num_test_sig += len_test_seg
@@ -187,16 +176,9 @@ test_sig_y = [1]*num_test_sig
 x_sig_train, x_sig_valid, y_sig_train, y_sig_valid = train_test_split(trainSigDF, train_sig_y, test_size=0.3, shuffle= True)
 
 # Add background events and sample weights to training / testing sample
-if args.which == "even":
-  trainBkgDF = trainBkgDF.append(df_bkg_even, ignore_index=True)
-  testBkgDF = testBkgDF.append(df_bkg_odd, ignore_index=True)
-  train_bkg_sample_wgts = df_bkg_even.loc[:, "eventWeight"].values
-elif args.which == "odd":
-  trainBkgDF = trainBkgDF.append(df_bkg_odd, ignore_index=True)
-  testBkgDF = testBkgDF.append(df_bkg_even, ignore_index=True)
-  train_bkg_sample_wgts = df_bkg_odd.loc[:, "eventWeight"].values
-else:
-  print("choose to train either even or odd model!!")
+trainBkgDF = trainBkgDF.append(df_bkg, ignore_index=True)
+testBkgDF = testBkgDF.append(df_bkg, ignore_index=True)
+train_bkg_sample_wgts = df_bkg.loc[:, "mcEventWeight"].values
 trainBkgDF["sampleWeight"] = train_bkg_sample_wgts
 
 train_bkg_y = [0]*len(trainBkgDF)
@@ -232,7 +214,7 @@ x_test = testDF.loc[:, input_features]
 print("Training variables:", input_features)
 nFeatures = len(input_features)
 
-model_path = "20230501_pTreco_off/SM_HHH/baseline_pairing_nobtag_opt_"+str(args.which)
+model_path = "~/dnn_tthh_training/"
 os.makedirs(model_path, exist_ok=True)
 # Saving training variables to json
 var_dict = {}
@@ -246,10 +228,10 @@ Scaling_train = scaler.fit(x_train)
 x_train_scaled = Scaling_train.transform(x_train)
 x_valid_scaled = Scaling_train.transform(x_valid)
 x_test_scaled = Scaling_train.transform(x_test)
-scaling = Export(scaler)
-scale_dict = scaling.to_json()
-with open(model_path + "/scaling.json", "w") as outfile:
-  json.dump(scale_dict, outfile)
+#scaling = Export(scaler)
+#scale_dict = scaling.to_json()
+#with open(model_path + "/scaling.json", "w") as outfile:
+#  json.dump(scale_dict, outfile)
 
 
 print("training")

@@ -17,7 +17,7 @@ do
                 for dropout in ${DROPOUT[@]}
                 do
                     echo "LR:"$lr" Batchsize:"$bs" Node:"$node" Layer:"$layer" Dropout:"$dropout
-                    python train_SM.py --which even --LR $lr --batchsize $bs --node $node --layer $layer --dropout $dropout
+                    python train_SM.py --LR $lr --batchsize $bs --node $node --layer $layer --dropout $dropout
                     done
             done
         done
