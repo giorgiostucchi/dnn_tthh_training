@@ -1,0 +1,41 @@
+000 (2436250.000.000) 09/15 13:54:35 Job submitted from host: <188.185.8.79:9618?addrs=188.185.8.79-9618+[2001-1458-d00-63--100-23a]-9618&alias=bigbird26.cern.ch&noUDP&sock=schedd_1787_4fd4>
+...
+040 (2436250.000.000) 09/15 15:01:47 Started transferring input files
+	Transferring to host: <188.184.162.184:9618?addrs=188.184.162.184-9618+[2001-1458-301-4a--100-b2]-9618&alias=b7s11p8025.cern.ch&noUDP&sock=slot1_1_279344_de59_20571>
+...
+040 (2436250.000.000) 09/15 15:01:47 Finished transferring input files
+...
+001 (2436250.000.000) 09/15 15:01:48 Job executing on host: <188.184.162.184:9618?addrs=188.184.162.184-9618+[2001-1458-301-4a--100-b2]-9618&alias=b7s11p8025.cern.ch&noUDP&sock=startd_279302_84e5>
+...
+006 (2436250.000.000) 09/15 15:01:56 Image size of job updated: 262620
+	3  -  MemoryUsage of job (MB)
+	2208  -  ResidentSetSize of job (KB)
+...
+006 (2436250.000.000) 09/15 15:06:56 Image size of job updated: 7357480
+	3274  -  MemoryUsage of job (MB)
+	3351968  -  ResidentSetSize of job (KB)
+...
+006 (2436250.000.000) 09/15 15:11:57 Image size of job updated: 7373352
+	3300  -  MemoryUsage of job (MB)
+	3378596  -  ResidentSetSize of job (KB)
+...
+006 (2436250.000.000) 09/15 15:16:58 Image size of job updated: 7380264
+	3308  -  MemoryUsage of job (MB)
+	3386632  -  ResidentSetSize of job (KB)
+...
+006 (2436250.000.000) 09/15 15:21:58 Image size of job updated: 7386152
+	3314  -  MemoryUsage of job (MB)
+	3393520  -  ResidentSetSize of job (KB)
+...
+006 (2436250.000.000) 09/15 15:26:58 Image size of job updated: 7392296
+	3322  -  MemoryUsage of job (MB)
+	3401048  -  ResidentSetSize of job (KB)
+...
+006 (2436250.000.000) 09/15 15:31:59 Image size of job updated: 7398696
+	3330  -  MemoryUsage of job (MB)
+	3409684  -  ResidentSetSize of job (KB)
+...
+006 (2436250.000.000) 09/15 15:37:00 Image size of job updated: 7708616
+	3638  -  MemoryUsage of job (MB)
+	3725312  -  ResidentSetSize of job (KB)
+...

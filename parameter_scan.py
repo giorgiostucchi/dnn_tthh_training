@@ -11,10 +11,10 @@ import json
 import h5py
 
 LR = [0.005, 0.01]
-BS = [64, 128, 256]
+BS = [128, 256]
 NODE = [12, 24]
 LAYER = [3, 4]
-DROPOUT = [0.1, 0.2, 0.3]
+DROPOUT = [0.1, 0.3]
 
 auc_dict = []
 auc = []
@@ -24,10 +24,11 @@ for lr in LR:
         for node in NODE:
             for layer in LAYER:
                 for dropout in DROPOUT:
-                    history = "20230501_pTreco_off/hyperparameter_scan/LR" + str(lr) + "_BS" + str(bs) + "_node" + str(node) + "_layer"+ str(layer) + "_dropout"+str(dropout) + "_even/history.json"
+                    history = "/eos/user/g/gstucchi/dnn_tthh_training/results/LR" + str(lr) + "_BS" + str(bs) + "_node" + str(node) + "_layer"+ str(layer) + "_dropout"+str(dropout) + "_Evt1000000_Vrbl40_Epochs10/history.json"
                     with open(history, 'r') as history_file:
                         history_dict = json.load(history_file)
-                        auc_last_epoch = history_dict["val_auc"]["19"]
+                        last_epoch = len(history_dict["val_auc"]) - 1
+                        auc_last_epoch = history_dict["val_auc"][str(last_epoch)]
                         auc.append(auc_last_epoch)
                         auc_dict.append({"LR": lr, "batchsize": bs, "node": node, "layer": layer, "dropout":dropout, "auc_last_epoch": auc_last_epoch})
         
