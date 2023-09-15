@@ -1,0 +1,13 @@
+executable = run_python_script.sh
+universe = vanilla
+output = output/$(Cluster).$(Process).out
+error = error/$(Cluster).$(Process).err
+log = log/$(Cluster).$(Process).log
+getenv = true
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+arguments = $(line)
+Request_Memory = 20 GB
++JobFlavour = "longlunch"
+
+queue arguments from arguments.txt

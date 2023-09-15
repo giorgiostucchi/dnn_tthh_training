@@ -1,0 +1,14 @@
+b7s11p5550.cern.ch
+Fri Sep 15 13:41:23 CEST 2023
+LR: 0.01 Batchsize: 256 Node: 24 Layer: 4 Dropout: 0.1
+we are in /pool/condor/dir_255853/tmp/tmp.GoLD90LawQ
+Using Athena/23.0.5 [cmake] with platform x86_64-centos7-gcc11-opt
+	at /cvmfs/atlas-nightlies.cern.ch/repo/sw/master_Athena_x86_64-centos7-gcc11-opt/2022-09-22T2101
+Test area: /pool/condor/dir_255853/tmp/tmp.GoLD90LawQ
+Unchanged: COOL_ORA_ENABLE_ADAPTIVE_OPT=Y
+Running Python script...
+I am starting something here...
+In the main now ...
+reading in background files <built-in function id>
+/pool/condor/dir_255853
+we are back in /pool/condor/dir_255853
