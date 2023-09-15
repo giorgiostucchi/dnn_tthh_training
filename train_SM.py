@@ -3,7 +3,7 @@ print("I am starting something here...")
 import argparse
 #from ROOT import *
 import pandas as pd
-import numpy 
+import numpy
 import uproot
 import os
 import seaborn as sn
@@ -38,7 +38,7 @@ from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
 import h5py
 from sklearn.utils import shuffle
-from sklearn.metrics import roc_curve, roc_auc_score, precision_recall_curve, auc
+from sklearn.metrics import roc_curve, roc_auc_score, precision_recall_curve, auc, confusion_matrix, ConfusionMatrixDisplay
 
 
 def GetParser():
@@ -82,16 +82,25 @@ def GetParser():
 
 args = GetParser()
 
+print("In the main now ...", flush=True)
+
 DEFAULT = -999
 LR = args.LR
 BATCHSIZE = args.batchsize
-EPOCH=80
+EPOCH=10
 nodes = [args.node]*args.layer
 dropout_rate = args.dropout
 
 #input_features = ["met_pt" ] #change these
 #input_features = ["nrecojet_antikt4","nrecojet_antikt4_btag85","chi_hh","chi_hz","chi_zz","DeltaR_12", "DeltaR_34", "DeltaR_56", "DeltaPhi_12", "DeltaPhi_34","DeltaPhi_56", "DeltaEta_12", "DeltaEta_34","DeltaEta_56", "DeltaR_1234", "DeltaR_1256", "DeltaR_3456", "DeltaPhi_1234", "DeltaPhi_1256", "DeltaPhi_3456", "DeltaEta_1234", "DeltaEta_1256", "DeltaEta_3456", "DeltaEta_max", "DeltaEta_min", "DeltaEta_mean", "DeltaR_max", "DeltaR_min", "DeltaR_mean", "mH1_hh", "mH2_hh", "mH_hz", "mZ_hz", "mZ1_zz", "mZ2_zz", "m_jj56", "pT_1", 'pT_2', "pT_3", "pT_4", "pT_5", "pT_6", "eta_1", "eta_2", "eta_3", "eta_4", "eta_5", "eta_6", "pT_12", "pT_34", "pT_56", "sumHT_bjets", "sumHT_totalJets", "met_pt", "met_phi"]
+'''
+all input features:
+'''
 input_features = ["nrecojet_antikt4","nrecojet_antikt4_btag85","chi_hh","chi_hz","chi_zz","DeltaR_12", "DeltaR_34", "DeltaPhi_12", "DeltaPhi_34", "DeltaEta_12", "DeltaEta_34", "DeltaR_1234", "DeltaPhi_1234", "DeltaEta_1234", "DeltaEta_max", "DeltaEta_min", "DeltaEta_mean", "DeltaR_max", "DeltaR_min", "DeltaR_mean", "mH1_hh", "mH2_hh", "mH_hz", "mZ_hz", "mZ1_zz", "mZ2_zz","pT_1", 'pT_2', "pT_3", "pT_4", "eta_1", "eta_2", "eta_3", "eta_4", "pT_12", "pT_34", "sumHT_bjets", "sumHT_totalJets", "met_pt", "met_phi"]
+'''
+selected input features:
+'''
+#input_features = ["nrecojet_antikt4","nrecojet_antikt4_btag85","chi_hh","chi_zz","DeltaR_12", "DeltaR_34", "DeltaEta_max", "DeltaEta_min", "DeltaR_max", "DeltaR_mean", "mZ1_zz", "pT_1", 'pT_2', "pT_3", "pT_4","pT_12", "pT_34", "sumHT_bjets", "sumHT_totalJets", "met_pt"]
 # Better function for saving keras predictions
 def Save_pred(pred_train_sig,pred_train_bkg,pred_test_sig,pred_test_bkg, path):
   numpy.savetxt(str(path) + "/TrainSigPred.txt", pred_train_sig, delimiter=',')
@@ -121,11 +130,14 @@ def create_model(input_dim):
   
   return model
 ################################ LOADING INPUT DATASETS ################################
-bkg_file = uproot.open("/eos/user/g/gstucchi/NTRUPLES/FullHadCuts/background.root:MiniTree_NOSYS")
+
+stop = -1    #with 1 M it works (with all variables), 2 M with 20 vrbls .... keep increasing, keeping just 20 variables
+
 print("reading in background files", id)
-#mainfolder = "/eos/atlas/atlascerngroupdisk/phys-hdbs/diHiggs/ttHH/forStudents/NTRUPLES/FullHadCuts/"
-#bkg_file = uproot.open(mainfolder + "mc20_13TeV.410470.PhPy8EG_A14_ttbar_hdamp258p75_nonallhad.deriv.NTRUPLE_PHYSLITE.e6337_s3681_r13144_p5631.33123165._000001.pool.root.1-test.FullHadCuts/data-Analysis_TTHH4B/mc20_13TeV.410470.PhPy8EG_A14_ttbar_hdamp258p75_nonallhad.deriv.DAOD_PHYSLITE.e6337_s3681_r13144_p5631.root:MiniTree_NOSYS")
-df_bkg = bkg_file.arrays(library="pd")
+bkg_file = uproot.open("/eos/user/g/gstucchi/NTRUPLES/isFullHad/background.root:MiniTree_NOSYS")
+df_bkg = bkg_file.arrays(library="pd", entry_start=0, entry_stop=stop)
+#print("applying cuts on number of jets")
+#df_bkg = df_bkg[(df_bkg['nrecojet_antikt4'] >= 6) & (df_bkg['nrecojet_antikt4_btag85'] >= 6)]  #stricter cuts
 # retrieve a single entry in df_bkg
 
 #input_features = bkg_file.keys()
@@ -145,16 +157,70 @@ train_sig_sample_wgts = []
 
 num_train_sig = 0
 num_test_sig = 0
-sig_file = uproot.open("/eos/user/g/gstucchi/NTRUPLES/FullHadCuts/signal.root:MiniTree_NOSYS")
 print("reading in signal files", id)
-#sig_file = uproot.open(mainfolder+"mc20_13TeV.523074.MGPy8EG_A14NNPDF23LO_ttHH_fullhad.deriv.NTRUPLE_PHYSLITE.e8531_a899_r13144_p5689.33615665._000001.pool.root.1-test.FullHadCuts/data-Analysis_TTHH4B/mc20_13TeV.523074.MGPy8EG_A14NNPDF23LO_ttHH_fullhad.deriv.DAOD_PHYSLITE.e8531_a899_r13144_p5689.root:MiniTree_NOSYS")
-df_sig = sig_file.arrays(library="pd") #this is already too big
-trainSigDF = trainSigDF.append(df_sig, ignore_index=True)
-testSigDF = testSigDF.append(df_sig, ignore_index=True)
-train_sig_wgts = df_sig.loc[:, "mcEventWeight"].values
-test_sig_wgts = df_sig.loc[:, "mcEventWeight"].values
-len_train_seg = len(df_sig)
-len_test_seg = len(df_sig)
+sig_file = uproot.open("/eos/user/g/gstucchi/NTRUPLES/isFullHad/signal.root:MiniTree_NOSYS")
+df_sig = sig_file.arrays(library="pd", entry_start=0, entry_stop=stop)
+#print("applying cuts on number of jets")
+#df_sig = df_sig[(df_sig['nrecojet_antikt4'] >= 6) & (df_sig['nrecojet_antikt4_btag85'] >= 6)]  #stricter cuts
+
+# print the entries of nrecojet_antikt4
+# print("nrecojet_antikt4 entries:", df_sig["nrecojet_antikt4"])
+
+#uncomment if you want to plot the input features, they are the same every time
+'''
+#plot all the input_features specified above, keeping signal and background separated. the input features are the branches of the MiniTree
+for feature in input_features:
+  fig = plt.figure(figsize=(15,12))
+  plt.style.use(hep.style.ROOT)
+  hep.atlas.text(text='Internal', loc=1, fontsize=20)
+  hep.atlas.text(text=r'$\sqrt{s}$=13 TeV, ttHH fullHad signal', loc=2, fontsize=20)
+  plt.hist(df_sig[feature], bins=50, histtype="step", density=True, label="signal", color="steelblue")
+  plt.hist(df_bkg[feature], bins=50, histtype="step", density=True, label="background", color="darkorange")
+  plt.legend()
+  ymin, ymax = plt.ylim()
+  plt.ylim(ymin, ymax*1.2)
+  plt.xlabel(feature)
+  plt.ylabel("No. events")
+  plot_name = "/afs/cern.ch/user/g/gstucchi/dnn_tthh_training/results/input_variables/" + feature + ".pdf"
+  plt.ioff()
+  fig.savefig(plot_name, transparent=True)
+  plt.close(fig)
+
+print("number of input features:", len(input_features))
+# now do the same thing but plot everything as subfigures on the same plot
+fig, axs = plt.subplots(6, 7, figsize=(90, 84))
+plt.style.use(hep.style.ROOT)
+hep.atlas.text(text='Internal', loc=1, fontsize=20)
+hep.atlas.text(text=r'$\sqrt{s}$=13 TeV, ttHH fullHad signal', loc=2, fontsize=20)
+for i, ax in enumerate(axs.flatten()):
+  if i >= len(input_features):
+    continue
+  if i < len(input_features):  
+    feature = input_features[i]
+    ax.hist(df_sig[feature], bins=50, histtype="step", density=True, label="signal", color="steelblue")
+    ax.hist(df_bkg[feature], bins=50, histtype="step", density=True, label="background", color="darkorange")
+    ax.legend()
+    ymin, ymax = ax.get_ylim()
+    ax.set_ylim(ymin, ymax*1.2)
+    ax.set_xlabel(feature)
+    ax.set_ylabel("No. events")
+fig.tight_layout()
+plot_name = "/afs/cern.ch/user/g/gstucchi/dnn_tthh_training/results/input_variables/all_variables.pdf"
+plt.ioff()
+fig.savefig(plot_name, transparent=True)
+plt.close(fig)
+'''
+
+df_sig_train, df_sig_test = train_test_split(df_sig, test_size=0.5, shuffle= True)
+# why is it splitting it here if we are doing the splitting afterwards as well with train_test_split?
+trainSigDF = trainSigDF.append(df_sig_train, ignore_index=True)
+print("Number of signal events in training:", len(trainSigDF))
+testSigDF = testSigDF.append(df_sig_test, ignore_index=True)
+print("Number of signal events in testing:", len(testSigDF))
+train_sig_wgts = df_sig_train.loc[:, "mcEventWeight"].values # numpy.ones(len(df_sig_train))  #  provare con 1        
+test_sig_wgts =  df_sig_test.loc[:, "mcEventWeight"].values   #  numpy.ones(len(df_sig_test))  # 
+len_train_seg = len(df_sig_train)
+len_test_seg = len(df_sig_test)
 
 num_train_sig += len_train_seg
 num_test_sig += len_test_seg
@@ -176,9 +242,14 @@ test_sig_y = [1]*num_test_sig
 x_sig_train, x_sig_valid, y_sig_train, y_sig_valid = train_test_split(trainSigDF, train_sig_y, test_size=0.3, shuffle= True)
 
 # Add background events and sample weights to training / testing sample
-trainBkgDF = trainBkgDF.append(df_bkg, ignore_index=True)
-testBkgDF = testBkgDF.append(df_bkg, ignore_index=True)
-train_bkg_sample_wgts = df_bkg.loc[:, "mcEventWeight"].values
+
+df_bkg_train, df_bkg_test = train_test_split(df_bkg, test_size=0.5, shuffle= True)
+
+trainBkgDF = trainBkgDF.append(df_bkg_train, ignore_index=True)
+print("Number of background events in training:", len(trainBkgDF))
+testBkgDF = testBkgDF.append(df_bkg_test, ignore_index=True)
+print("Number of background events in testing:", len(testBkgDF))
+train_bkg_sample_wgts = df_bkg_train.loc[:, "mcEventWeight"].values #  numpy.ones(len(df_bkg_train)) # 
 trainBkgDF["sampleWeight"] = train_bkg_sample_wgts
 
 train_bkg_y = [0]*len(trainBkgDF)
@@ -204,6 +275,8 @@ x_valid = x_valid.loc[:, input_features]
 
 print("Number of signal events in training:", len(x_sig_train))
 print("Number of background events in training:", len(x_bkg_train))
+print("Number of signal events in validation:", len(x_sig_valid))
+print("Number of background events in validation:", len(x_bkg_valid))
 print("Signal yields in training", sum(x_sig_train["sampleWeight"]))
 
 testDF = testDF.append(testSigDF, ignore_index=True)
@@ -213,8 +286,8 @@ x_test = testDF.loc[:, input_features]
 
 print("Training variables:", input_features)
 nFeatures = len(input_features)
-
-model_path = "/afs/cern.ch/user/g/gstucchi/dnn_tthh_training/results/"
+#eos
+model_path = "/eos/user/g/gstucchi/dnn_tthh_training/results/LR" + str(args.LR) + "_BS" + str(args.batchsize) + "_node" + str(args.node) + "_layer"+ str(args.layer) + "_dropout"+str(args.dropout) + "_Evt" + str(stop) + "_Vrbl" + str(nFeatures) + "_Epochs" + str(EPOCH) + "/"
 os.makedirs(model_path, exist_ok=True)
 # Saving training variables to json
 var_dict = {}
@@ -263,14 +336,16 @@ print("plotting train/val loss")
 fig = plt.figure(figsize=(15,12))
 plt.style.use(hep.style.ROOT)
 hep.atlas.text(text='Internal', loc=1, fontsize=20)
-hep.atlas.text(text=r'$\sqrt{s}$=14 Tev, ttHH fullHad signal', loc=2, fontsize=20)
+hep.atlas.text(text=r'$\sqrt{s}$=13 TeV, ttHH fullHad signal', loc=2, fontsize=20)
 plt.plot(history.history['loss'])
 plt.plot(history.history['val_loss'])
 plt.legend(['train', 'validation'], loc='upper right')
 plt.ylabel('Loss')
 plt.xlabel('Epoch')
 name = model_path + "/TrainValLoss.pdf"
+plt.ioff()
 fig.savefig(name)
+plt.close(fig)
 
 train_sig = trainSigDF.loc[:,input_features]
 train_bkg = trainBkgDF.loc[:,input_features]
@@ -291,18 +366,21 @@ print("plotting nn prediction")
 fig = plt.figure(figsize=(15,12))
 plt.style.use(hep.style.ROOT)
 hep.atlas.text(text='Internal', loc=1, fontsize=20)
-hep.atlas.text(text=r'$\sqrt{s}$=14 Tev, ttHH fullHad signal', loc=2, fontsize=20)
+hep.atlas.text(text=r'$\sqrt{s}$=13 TeV, ttHH fullHad signal', loc=2, fontsize=20)
 plt.hist(pred_train_sig, bins=50, histtype="step", density=True, linestyle='--', label="signal (training)", color="steelblue")
 plt.hist(pred_val_sig, bins=50, histtype="step", density=True, label="signal (validation)", color="steelblue")
-plt.hist(pred_train_bkg, bins=50, histtype="step", density=True, linestyle='--', label="background (training)", color="darkorange")
 plt.hist(pred_val_bkg, bins=50, histtype="step", density=True, label="background (validation)", color="darkorange")
+plt.hist(pred_train_bkg, bins=50, histtype="step", density=True, linestyle='--', label="background (training)", color="darkorange")
+
 plt.legend()
 ymin, ymax = plt.ylim()
 plt.ylim(ymin, ymax*1.2)
 plt.xlabel("DNN Prediction")
 plt.ylabel("No. events")
 plot_name = model_path +"/nn_pred.pdf"
+plt.ioff()
 fig.savefig(plot_name, transparent=True)
+plt.close(fig)
 
 ################## DONE: shapley #####################
 print("plotting shapley beeswarm")
@@ -316,9 +394,12 @@ shap_values = shap.Explanation(
     data=explanation.data, 
     feature_names=input_features
 )
-shap.plots.beeswarm(shap_values,                    max_display=50)
+shap.plots.beeswarm(shap_values, max_display=50)
 plt.tight_layout()
+plt.ioff()
 fig.savefig(model_path + "/shapley_beeswarm.pdf")
+plt.close(fig)
+
 ######################################################
 
 
@@ -353,7 +434,9 @@ plt.xlim(0,1)
 plt.xlabel("False Positive Rate")
 plt.ylabel("True Positive Rate")
 plot_name = model_path +"/ROC.pdf"
+plt.ioff()
 fig.savefig(plot_name, transparent=True)
+plt.close(fig)
 
 # plot precision recall curve
 print("plotting precision recall curve")
@@ -370,7 +453,28 @@ plt.xlim(0,1)
 plt.xlabel("Recall")
 plt.ylabel("Precision")
 plot_name = model_path +"/Precision_recall.pdf"
+plt.ioff()
 fig.savefig(plot_name, transparent=True)
+plt.close(fig)
+
+# plot significance curve (this makes no actual sense without weights!!!)
+print("plotting significance curve")
+fig = plt.figure(figsize=(15,12))
+plt.style.use(hep.style.ROOT)
+hep.atlas.text(text='Internal', loc=1, fontsize=20)
+hep.atlas.text(text='ttHH fullHad signal', loc=2, fontsize=20)
+plt.plot(fpr_train, tpr_train / (fpr_train**0.5), label='Training significance curve') # is it meaningful to plot fpr as x variable?
+plt.plot(fpr_val, tpr_val / (fpr_val**0.5), label='Validation significance curve')
+plt.legend()
+ymin, ymax = plt.ylim()
+plt.ylim(ymin, ymax*1.2)
+plt.xlim(0,1)
+plt.xlabel("False Positive Rate")
+plt.ylabel("Significance")
+plot_name = model_path +"/Significance.pdf"
+plt.ioff()
+fig.savefig(plot_name, transparent=True)
+plt.close(fig)
 
 ################ NOW WE TRY WRITING OUT THESE PREDICTION TO AN OUTPUT FILE ################
 Save_pred(pred_train_sig,pred_train_bkg,pred_val_sig,pred_val_bkg, model_path)
