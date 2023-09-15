@@ -1,15 +1,17 @@
+Based on dnn_training from HHH->6b analysis https://gitlab.cern.ch/trihiggs/dnn_training 
+
 # DNN_training
 The modules needed in your environment for the training are specified in requireiments.txt.
 
 ## Training
 The DNN training for resonant TRSM uses
 ``` 
-train.py --LR <learning-rate>' --batchsize <batchsize> --node <node> --layer <layer> --dropout <rate> --which <fold>
+train.py --LR <learning-rate>' --batchsize <batchsize> --node <node> --layer <layer> --dropout <rate>
 ```
 where the learning rate, batchsize, the number of nodes per layer, the number of hidden layers, dropout rate, and even/odd fold needs to be specified. The training files, and output file path where the model and model history are saved need to be specified inside (should probably make this configurable at some point.)
 The SM HHH DNN training uses 
 ``` 
-train_SM.py --LR <learning-rate>' --batchsize <batchsize> --node <node> --layer <layer> --dropout <rate> --which <fold>
+train_SM.py --LR <learning-rate>' --batchsize <batchsize> --node <node> --layer <layer> --dropout <rate>
 ```
 Same as above. The input features used in the resonant TRSM and SM HHH training are different, and are optimised separately.
 
