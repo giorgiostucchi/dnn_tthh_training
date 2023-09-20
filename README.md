@@ -1,7 +1,7 @@
 Based on dnn_training from HHH->6b analysis https://gitlab.cern.ch/trihiggs/dnn_training 
 
 # DNN_training
-The modules needed in your environment for the training are specified in requireiments.txt.
+The modules needed in your environment for the training are specified in requirements.txt.
 
 ## Training
 The DNN training for resonant TRSM uses
